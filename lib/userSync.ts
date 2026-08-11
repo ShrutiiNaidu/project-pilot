@@ -65,6 +65,7 @@ export async function syncClerkUser(clerkUser: ClerkUserParam) {
         resumeUrl: '',
         dailyStudyTime: 15,
         onboardingCompleted: false,
+        deletedAt: null as Date | null,
         createdAt: new Date(),
         updatedAt: new Date()
       };

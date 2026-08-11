@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import CodeBlock from '@/components/ai/CodeBlock';
 
 // Stub sonner so tests don't depend on the actual toast portal.
@@ -95,10 +95,14 @@ describe('CodeBlock', () => {
     const { toast } = await import('sonner');
     installClipboard();
     render(<CodeBlock code="hello" />);
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Copy code to clipboard' }),
-    );
-    await vi.runAllTimersAsync();
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Copy code to clipboard' }),
+      );
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
 
     expect(
       screen.getByRole('button', { name: 'Code copied to clipboard' }),
@@ -110,19 +114,27 @@ describe('CodeBlock', () => {
   it('resets the button state after the reset delay', async () => {
     installClipboard();
     render(<CodeBlock code="hello" resetDelayMs={2000} />);
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Copy code to clipboard' }),
-    );
-    await vi.runAllTimersAsync();
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Copy code to clipboard' }),
+      );
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
 
     expect(screen.getByText('Copied')).toBeInTheDocument();
 
     // Just before reset: still "Copied".
-    vi.advanceTimersByTime(1999);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1999);
+    });
     expect(screen.getByText('Copied')).toBeInTheDocument();
 
     // After reset: back to "Copy".
-    vi.advanceTimersByTime(2);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10);
+    });
     expect(screen.getByText('Copy')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Copy code to clipboard' }),

@@ -284,3 +284,31 @@ export async function deleteNotification(notificationId: string) {
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
+
+export async function markAllNotificationsAsRead() {
+  try {
+    const user = await getAuthenticatedDbUser();
+    const result = await prisma.notification.updateMany({
+      where: { userId: user.id, isRead: false },
+      data: { isRead: true },
+    });
+    return { success: true as const, count: result.count };
+  } catch (error) {
+    console.error('Failed to mark all notifications as read:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+export async function deleteAllReadNotifications() {
+  try {
+    const user = await getAuthenticatedDbUser();
+    const result = await prisma.notification.deleteMany({
+      where: { userId: user.id, isRead: true },
+    });
+    return { success: true as const, count: result.count };
+  } catch (error) {
+    console.error('Failed to delete all read notifications:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
