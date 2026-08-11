@@ -23,7 +23,7 @@ async function getAuthenticatedUserId(): Promise<string> {
   if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
     const session = await auth();
     userId = session.userId;
-  } else if (process.env.NODE_ENV === 'development') {
+  } else if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
     userId = 'mock-developer-id';
   }
 
@@ -46,6 +46,7 @@ export async function getUserProjects(take?: number, skip?: number) {
       where: { clerkId },
       include: {
         projects: {
+          where: { deletedAt: null },
           ...(take !== undefined ? { take } : {}),
           ...(skip !== undefined ? { skip } : {}),
           include: {
@@ -86,6 +87,7 @@ export async function getOwnedProjectForExport(projectId: string) {
       where: {
         id: projectId,
         user: { clerkId },
+        deletedAt: null,
       },
       select: {
         id: true,
@@ -395,4 +397,39 @@ export async function deleteMilestone(
       id: milestoneId,
     },
   });
+}
+
+export async function deleteProject(projectId: string) {
+  try {
+    const clerkId = await getAuthenticatedUserId();
+    const dbUser = await prisma.user.findUnique({
+      where: { clerkId }
+    });
+
+    if (!dbUser) {
+      return { success: false, errorType: 'AUTH', message: 'User record not found.' };
+    }
+
+    const project = await prisma.project.findFirst({
+      where: {
+        id: projectId,
+        userId: dbUser.id,
+        deletedAt: null,
+      }
+    });
+
+    if (!project) {
+      return { success: false, errorType: 'AUTH', message: 'Unauthorized or project not found.' };
+    }
+
+    const updated = await prisma.project.update({
+      where: { id: projectId },
+      data: { deletedAt: new Date() },
+    });
+
+    return { success: true, project: updated };
+  } catch (error: any) {
+    console.error('Failed to soft delete project:', error);
+    return { success: false, errorType: 'SERVER', message: error.message || 'Internal server error.' };
+  }
 }

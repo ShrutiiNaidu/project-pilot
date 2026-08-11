@@ -59,6 +59,7 @@ model Project {
   activities    Activity[]
   milestones    Milestone[]
   notifications Notification[]
+  deletedAt     DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
